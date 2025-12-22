@@ -129,6 +129,41 @@ async function run() {
       res.send(result);
     });
 
+    //services related apis
+    app.post("/services", async (req, res) => {
+      const newService = req.body;
+      newService.createdAt = new Date();
+      const existingService = await servicesCollection.findOne({
+        serviceTitle: newService.serviceTitle,
+      });
+      if (existingService) {
+        return res.send("Service already exists. Do not insert again.");
+      }
+      const result = await servicesCollection.insertOne(newService);
+      res.send(result);
+    });
+
+    app.get("/services", async (req, res) => {
+      const result = await servicesCollection.find({}).toArray();
+      res.send(result);
+    });
+
+    app.get("/services/:id", async (req, res) => {
+      const { id } = req.params;
+      try {
+        const service = await servicesCollection.findOne({
+          _id: new ObjectId(id),
+        });
+        if (!service) {
+          return res.status(404).send({ message: "Service not found" });
+        }
+        res.send(service);
+      } catch (error) {
+        res.status(500).send({ message: "Server error", error });
+      }
+    });
+
+
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
