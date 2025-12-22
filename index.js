@@ -304,6 +304,37 @@ async function run() {
       res.send(result);
     });
 
+    // payment related apis
+    app.post("/payment-checkout-session", async (req, res) => {
+      const paymentInfo = req.body;
+      const amount = parseInt(paymentInfo.cost) * 100;
+      const session = await stripe.checkout.sessions.create({
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              unit_amount: amount,
+              product_data: {
+                name: `Please pay for: ${paymentInfo.serviceName}`,
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        customer_email: paymentInfo.customerEmail,
+        mode: "payment",
+        metadata: {
+          bookingId: paymentInfo.bookingId,
+          serviceId: paymentInfo.serviceId,
+          serviceName: paymentInfo.serviceName,
+        },
+        success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancelled`,
+      });
+
+      res.send({ url: session.url });
+    });
+
 
 
     // Send a ping to confirm a successful connection
