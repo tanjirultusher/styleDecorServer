@@ -205,6 +205,69 @@ async function run() {
       res.send(result);
     });
 
+    app.delete("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const result = await bookingsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.patch("/bookings/:id/assign-decorator", async (req, res) => {
+      const { decoratorId, decoratorName, decoratorEmail } = req.body;
+      const { id } = req.params;
+
+      if (!decoratorId) {
+        return res.status(400).send({ error: "decoratorId is required" });
+      }
+
+      try {
+        const query = { _id: new ObjectId(id) };
+
+        const updatedDoc = {
+          $set: {
+            workStatus: "decorator_assigned",
+            decoratorId,
+            decoratorName: decoratorName || null,
+            decoratorEmail: decoratorEmail || null,
+          },
+        };
+
+        const result = await bookingsCollection.updateOne(query, updatedDoc);
+
+        if (result.matchedCount === 0) {
+          return res.status(404).send({ error: "Booking not found" });
+        }
+
+        const decoratorQuery = { _id: new ObjectId(decoratorId) };
+        const decoratorUpdatedDoc = {
+          $set: {
+            workStatus: "booked",
+          },
+        };
+
+        const decoratorResult = await decoratorsCollection.updateOne(
+          decoratorQuery,
+          decoratorUpdatedDoc
+        );
+
+        if (decoratorResult.matchedCount === 0) {
+          console.warn(`Decorator with ID ${decoratorId} not found`);
+        }
+
+        res.status(200).send({
+          success: true,
+          bookingUpdated: result.modifiedCount > 0,
+          decoratorUpdated: decoratorResult.modifiedCount > 0,
+          message: "Decorator assigned successfully",
+        });
+      } catch (error) {
+        console.error("Error assigning decorator:", error);
+        res.status(500).send({ error: "Internal server error" });
+      }
+    });
+
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     // console.log(
