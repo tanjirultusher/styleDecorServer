@@ -418,6 +418,27 @@ async function run() {
       res.send(result);
     });
 
+    // decorators related apis
+    app.get("/decorators", async (req, res) => {
+      const query = {};
+      if (req.query.status) {
+        query.status = req.query.status;
+      }
+      const cursor = decoratorsCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.post("/decorators", async (req, res) => {
+      const decorator = req.body;
+      decorator.status = "pending";
+      decorator.createdAt = new Date();
+
+      const result = await decoratorsCollection.insertOne(decorator);
+      res.send(result);
+    });
+
+
 
 
     // Send a ping to confirm a successful connection
