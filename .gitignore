@@ -1,0 +1,4 @@
+.vercel
+.env
+node_modules
+style-decor-auth-firebase-adminsdk.json
