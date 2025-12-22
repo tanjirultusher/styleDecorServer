@@ -267,6 +267,44 @@ async function run() {
       }
     });
 
+    //consultation
+    app.post("/consultations", async (req, res) => {
+      const newConsultation = req.body;
+      newConsultation.createdAt = new Date();
+      const result = await consultationsCollection.insertOne(newConsultation);
+      res.send(result);
+    });
+
+    app.get("/consultations", async (req, res) => {
+      const query = {};
+      const { email } = req.query;
+      if (email) {
+        query.userEmail = email;
+      }
+
+      const options = { sort: { createdAt: -1 } };
+
+      const cursor = consultationsCollection.find(query, options);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/consultations/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await consultationsCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.delete("/consultations/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const result = await consultationsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
