@@ -169,7 +169,7 @@ async function run() {
       res.send(result);
     });
 
-//bookings related apis
+    //bookings related apis
     app.post("/bookings", async (req, res) => {
       const newBooking = req.body;
       newBooking.createdAt = new Date();
@@ -335,7 +335,6 @@ async function run() {
       res.send({ url: session.url });
     });
 
-
     app.patch("/payment-success", async (req, res) => {
       const sessionId = req.query.session_id;
       const session = await stripe.checkout.sessions.retrieve(sessionId);
@@ -438,8 +437,47 @@ async function run() {
       res.send(result);
     });
 
+    app.patch(
+      "/decorators/:id",
+      verifyFBToken,
+      verifyAdmin,
+      async (req, res) => {
+        const status = req.body.status;
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            status: status,
+            workStatus: "available",
+          },
+        };
 
+        const result = await decoratorsCollection.updateOne(query, updatedDoc);
 
+        if (status === "approved") {
+          const email = req.body.email;
+          const userQuery = { email };
+          const updateUser = {
+            $set: {
+              role: "decorator",
+            },
+          };
+          const userResult = await usersCollection.updateOne(
+            userQuery,
+            updateUser
+          );
+        }
+
+        res.send(result);
+      }
+    );
+
+    app.delete("/decorators/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await decoratorsCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
