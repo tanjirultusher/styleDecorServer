@@ -169,6 +169,42 @@ async function run() {
       res.send(result);
     });
 
+//bookings related apis
+    app.post("/bookings", async (req, res) => {
+      const newBooking = req.body;
+      newBooking.createdAt = new Date();
+      newBooking.paymentStatus = "unpaid";
+      newBooking.workStatus = "pending";
+      const result = await bookingsCollection.insertOne(newBooking);
+      res.send(result);
+    });
+
+    app.get("/bookings", async (req, res) => {
+      const query = {};
+      const { email } = req.query;
+      if (email) {
+        query.userEmail = email;
+      }
+
+      const options = { sort: { createdAt: -1 } };
+
+      const cursor = bookingsCollection.find(query, options);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/bookings", async (req, res) => {
+      const result = await bookingsCollection.find({}).toArray();
+      res.send(result);
+    });
+
+    app.get("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingsCollection.findOne(query);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     // console.log(
