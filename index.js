@@ -55,7 +55,79 @@ async function run() {
     const decoratorsCollection = db.collection("decorators");
     const consultationsCollection = db.collection("consultations");
 
-   
+
+    // users related apis
+    app.get("/users/:email/role", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ role: user?.role || "user" });
+    });
+
+    app.get("/users", verifyFBToken, async (req, res) => {
+      const searchText = req.query.searchText;
+      const query = {};
+
+      if (searchText) {
+        query.$or = [
+          { displayName: { $regex: searchText, $options: "i" } },
+          { email: { $regex: searchText, $options: "i" } },
+        ];
+      }
+
+      const cursor = usersCollection
+        .find(query)
+        .sort({ createdAt: -1 })
+        .limit(5);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.get("/users", verifyFBToken, async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      user.role = "user";
+      user.createdAt = new Date();
+      const email = user.email;
+      const userExists = await usersCollection.findOne({ email });
+
+      if (userExists) {
+        return res.send({ message: "user exists" });
+      }
+
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    app.patch(
+      "/users/:id/role",
+      verifyFBToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const roleInfo = req.body;
+        const query = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            role: roleInfo.role,
+          },
+        };
+        const result = await usersCollection.updateOne(query, updatedDoc);
+        res.send(result);
+      }
+    );
+
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
 
 
     // Send a ping to confirm a successful connection
