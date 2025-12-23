@@ -11,7 +11,9 @@ const port = process.env.PORT || 3000;
 const admin = require("firebase-admin");
 // const serviceAccount = require("./style-decor-auth-firebase-adminsdk.json");
 
-const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8')
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, "base64").toString(
+  "utf8"
+);
 const serviceAccount = JSON.parse(decoded);
 
 admin.initializeApp({
@@ -194,8 +196,8 @@ async function run() {
 
     app.delete("/services/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) };    
-      const result = await servicesCollection.deleteOne(query); 
+      const query = { _id: new ObjectId(id) };
+      const result = await servicesCollection.deleteOne(query);
       res.send(result);
     });
 
@@ -362,6 +364,37 @@ async function run() {
         cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancelled`,
       });
 
+      res.send({ url: session.url });
+    });
+
+    app.post("/create-checkout-session", async (req, res) => {
+      const paymentInfo = req.body;
+      const amount = parseInt(paymentInfo.cost) * 100;
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: "USD",
+              unit_amount: amount,
+              product_data: {
+                name: paymentInfo.serviceName,
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        customer_email: paymentInfo.customerEmail,
+        mode: "payment",
+        metadata: {
+          bookingId: paymentInfo.bookingId,
+          serviceId: paymentInfo.serviceId,
+          serviceName: paymentInfo.serviceName,
+        },
+        success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success`,
+        cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancelled`,
+      });
+      console.log(session);
       res.send({ url: session.url });
     });
 
